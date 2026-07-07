@@ -1,93 +1,71 @@
-# 06_Hypothesis_Testing – Statistical Inference with Confidence Intervals & Z-Test
+# 📘 Hypothesis Testing: Experimentation & Validation
 
-## 📌 Overview
-This module focuses on **statistical inference** using **estimation, confidence intervals, and hypothesis testing**.  
-The objective is to make **data-driven decisions** by quantifying uncertainty and testing assumptions about population parameters.
-
-The module demonstrates how inferential statistics are applied in real-world analytical scenarios.
+A guide to hypothesis testing, statistical experiment design, A/B test validation, and sample size power analysis.
 
 ---
 
-## 🛠️ Libraries Used
-- `numpy`
-- `scipy.stats`
-- `math`
+## 💡 Engineering Intuition & Experimentation
+
+Hypothesis testing provides a framework to determine if a model change, UI design, or algorithm update results in a true improvement, or if the variance is due to random noise.
+
+- **Statistical vs. Practical Significance**: A large sample size can make a tiny, useless change (e.g., reducing page load time by 1 microsecond) statistically significant (\(p < 0.05\)). Always verify if the effect size has practical business or engineering value.
+- **Type I & Type II Errors**:
+  - **Type I (\(\alpha\))**: False Positive. Saying the new model is better when it isn't. (Usually capped at 5%).
+  - **Type II (\(\beta\))**: False Negative. Missing a true improvement because the sample size was too small. **Power** (\(1 - \beta\)) is the probability of correctly detecting a true change (usually targeted at 80%).
+- **Power Analysis**: Run a power analysis *before* starting an experiment to determine the minimum sample size required to detect a target effect size. Doing this prevents running tests too long or stopping them too early.
 
 ---
 
-## 🔍 Topics Covered
+## 🛠 Best-Practice A/B Testing & Power Analysis Example
 
-### 1️⃣ Estimation & Confidence Intervals
-Confidence intervals were constructed to estimate the **population mean** using:
+```python
+from statsmodels.stats.power import TTestIndPower
+import numpy as np
+from scipy import stats
 
-- **t-distribution** (when population standard deviation is unknown)
-- **z-distribution** (when population standard deviation is known)
+# 1. Determine minimum sample size needed
+# Effect size (Cohen's d) = 0.2 (small change), alpha = 0.05, power = 0.80
+analysis = TTestIndPower()
+sample_size = analysis.solve_power(effect_size=0.2, alpha=0.05, power=0.80, ratio=1.0)
+print(f"Minimum sample size per group: {int(np.ceil(sample_size))}")
 
-A **99% confidence level** was used to reflect high statistical certainty.
+# 2. Evaluate actual A/B test results (t-test)
+group_A = np.random.normal(loc=12.0, scale=2.0, size=400)  # Baseline
+group_B = np.random.normal(loc=12.3, scale=2.0, size=400)  # Variant
 
-#### ✔️ Results
-- **99% CI (t-distribution):**  
-  `[1.09, 1.387]`
-- **99% CI (z-distribution, σ = 0.2):**  
-  `[1.106, 1.372]`
-
-These intervals provide a range of plausible values for the true population mean.
-
----
-
-### 2️⃣ Hypothesis Testing – One-Tailed Z-Test
-A **one-tailed Z-test** was performed to evaluate whether the **average weekly cost has increased**.
-
-#### 🔹 Hypotheses
-- **Null Hypothesis (H₀):** μ = 4000  
-- **Alternative Hypothesis (H₁):** μ > 4000  
-
-#### 🔹 Test Parameters
-- Significance level (α): **0.05**
-- Known population standard deviation
-- Sample size: **25**
+t_stat, p_val = stats.ttest_ind(group_A, group_B, equal_var=False)
+print(f"t-statistic: {t_stat:.4f} | p-value: {p_val:.4f}")
+if p_val < 0.05:
+    print("Reject Null Hypothesis: The difference is statistically significant.")
+else:
+    print("Fail to Reject Null Hypothesis: The difference could be due to noise.")
+```
 
 ---
 
-### 3️⃣ Test Statistic & Decision Rule
-- **Z-statistic:** `-38.000`
-- **Critical value (Zₐ):** `1.645`
+## ⚠️ Common Pitfalls & Debugging Tips
 
-Since the calculated Z-statistic does **not exceed** the critical value, the null hypothesis is **not rejected**.
+### 1. "p-hacking" by Continuous Peeking
+*   **The Bug**: Peeking at the p-value of an A/B test every day and stopping the experiment immediately when the p-value dips below 0.05. This dramatically inflates the Type I error rate.
+*   **The Fix**: Determine the sample size beforehand, run the experiment until that size is fully reached, and only compute the p-value once at the end.
 
-#### ✔️ Conclusion
-> There is **insufficient statistical evidence** to conclude that the average weekly cost has increased.
-
----
-
-## ⭐ Why This Module Matters
-- Introduces **inferential statistics**, a core skill in data science
-- Helps quantify **uncertainty** in real-world data
-- Enables **evidence-based decision making**
-- Builds strong foundations for:
-  - A/B testing
-  - Business analytics
-  - Experimental analysis
-  - Machine learning evaluation
+### 2. Multiple Comparison Bias
+*   **The Bug**: Testing 20 different metric variants simultaneously against a control group without correcting for multiple comparisons. The chance of finding a false positive purely by chance increases exponentially.
+*   **The Fix**: Apply a correction method, such as the Bonferroni correction:
+    \[
+    \alpha_{\text{adjusted}} = \frac{\alpha_{\text{original}}}{k}
+    \]
+    where \(k\) is the number of simultaneous tests.
 
 ---
 
-## 🔜 Next Module
-➡️ ** Feature Engineering AND Multiple_Linear_Regression **
+## ⚡ Real-World & Project Connections
+
+*   **PathPilot**: When deploying a new routing algorithm to production, run an A/B test comparing travel times of users routed by the new engine vs. the baseline. Use hypothesis testing to verify that routing latency improvements are statistically sound.
 
 ---
 
-## 🚀 Skills Demonstrated
-- Confidence interval estimation
-- Hypothesis formulation
-- Z-test implementation
-- Statistical decision making
-- Python-based statistical analysis
+## 🔗 Further Reading & Reference Links
 
----
-
-## ✅ Status
-✔ Confidence intervals computed  
-✔ Hypothesis tested and interpreted  
-✔ Ready for feature engineering and modeling
-
+- [Statsmodels Power & Sample Size Calculations](https://www.statsmodels.org/stable/stats.html)
+- [A/B Testing Pitfalls & Multi-testing Corrections](https://towardsdatascience.com/the-bonferroni-correction-eef8876c5267)
